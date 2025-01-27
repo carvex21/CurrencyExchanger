@@ -33,14 +33,13 @@ namespace CurrencyExchanger.Api.Services
         public async Task<Wallet> GetWalletAsync(long walletId)
         {
             return await _dbContext.Wallets.FirstOrDefaultAsync(w => w.Id == walletId)
-                ?? throw new Exception("Wallet not found.");
+                ?? throw new Exception(">>Wallet not found<<");
         }
 
         public async Task<decimal> GetConvertedBalanceAsync(long walletId, string? targetCurrency)
         {
             var wallet = await GetWalletAsync(walletId);
 
-            // Handle EUR as the default currency
             decimal sourceRate = 1;
             decimal targetRate = 1;
 
@@ -48,11 +47,10 @@ namespace CurrencyExchanger.Api.Services
             {
                 var rates = await _currencyGateway.GetCurrencyRatesAsync();
 
-                // Find sourceRate (for the incoming currency)
                 var sourceCurrencyRate = rates.FirstOrDefault(r => r.CurrencyCode == wallet.Currency);
                 if (sourceCurrencyRate == null)
                 {
-                    throw new ArgumentException($"The wallet currency '{wallet.Currency}' is not supported.");
+                    throw new ArgumentException($">>The wallet currency '{wallet.Currency}' is not supported<<");
                 }
 
                 sourceRate = sourceCurrencyRate.Rate;
@@ -62,17 +60,15 @@ namespace CurrencyExchanger.Api.Services
             {
                 var rates = await _currencyGateway.GetCurrencyRatesAsync();
 
-                // Find targetRate (for the wallet's currency)
                 var targetCurrencyRate = rates.FirstOrDefault(r => r.CurrencyCode == targetCurrency);
                 if (targetCurrencyRate == null)
                 {
-                    throw new ArgumentException($"The target currency '{targetCurrency}' is not supported.");
+                    throw new ArgumentException($">>The target currency '{targetCurrency}' is not supported<<");
                 }
 
                 targetRate = targetCurrencyRate.Rate;
             }
 
-            // Convert the balance
             return wallet.Balance / sourceRate * targetRate;
         }
 
@@ -80,7 +76,6 @@ namespace CurrencyExchanger.Api.Services
         {
             var wallet = await GetWalletAsync(walletId);
 
-            // Handle EUR as the default currency
             decimal sourceRate = 1;
             decimal targetRate = 1;
 
@@ -91,7 +86,7 @@ namespace CurrencyExchanger.Api.Services
                 var sourceCurrencyRate = rates.FirstOrDefault(r => r.CurrencyCode == currency);
                 if (sourceCurrencyRate == null)
                 {
-                    throw new ArgumentException($"The currency '{currency}' is not supported.");
+                    throw new ArgumentException($">>The currency '{currency}' is not supported<<");
                 }
 
                 sourceRate = sourceCurrencyRate.Rate;
@@ -104,7 +99,7 @@ namespace CurrencyExchanger.Api.Services
                 var targetCurrencyRate = rates.FirstOrDefault(r => r.CurrencyCode == wallet.Currency);
                 if (targetCurrencyRate == null)
                 {
-                    throw new ArgumentException($"The wallet currency '{wallet.Currency}' is not supported.");
+                    throw new ArgumentException($">>The wallet currency '{wallet.Currency}' is not supported<<");
                 }
 
                 targetRate = targetCurrencyRate.Rate;
@@ -120,7 +115,7 @@ namespace CurrencyExchanger.Api.Services
 
                 case "subtractfundsstrategy":
                     if (wallet.Balance < amount)
-                        throw new Exception("Insufficient funds.");
+                        throw new Exception(">>Insufficient funds<<");
                     wallet.Balance -= amount;
                     break;
 
@@ -129,7 +124,7 @@ namespace CurrencyExchanger.Api.Services
                     break;
 
                 default:
-                    throw new Exception("Invalid strategy.");
+                    throw new Exception(">>Unknown strategy<<");
             }
 
             await _dbContext.SaveChangesAsync();

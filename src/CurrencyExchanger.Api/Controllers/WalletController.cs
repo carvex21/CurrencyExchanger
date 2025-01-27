@@ -35,7 +35,7 @@ namespace CurrencyExchanger.Api.Controllers
             try
             {
                 await _walletService.AdjustBalanceAsync(walletId, request.Amount, request.Currency, request.Strategy);
-                return Ok("Wallet balance adjusted.");
+                return Ok("++Wallet balance adjusted++");
             }
             catch (ArgumentException ex)
             {
@@ -43,7 +43,7 @@ namespace CurrencyExchanger.Api.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { Error = "An internal error occurred. Please try again later." });
+                return StatusCode(500, new { Error = ">>An internal error occurred - Please try again later<<" });
             }
         }
     }
