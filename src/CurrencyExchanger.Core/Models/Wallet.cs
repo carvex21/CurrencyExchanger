@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-
 namespace CurrencyExchanger.Core.Models
 {
     public class Wallet

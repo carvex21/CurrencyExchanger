@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using CurrencyExchanger.Core.Models;
+﻿using CurrencyExchanger.Core.Models;
 
 namespace CurrencyExchanger.Infrastructure.GatewayLibrary
 {

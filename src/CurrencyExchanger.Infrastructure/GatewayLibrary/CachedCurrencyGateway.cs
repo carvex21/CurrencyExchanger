@@ -18,17 +18,17 @@ namespace CurrencyExchanger.Infrastructure.GatewayLibrary
         {
             if (!_cache.LatestRates.Any())
             {
-                _logger.LogWarning("Cache is empty. Returning no rates.");
+                _logger.LogWarning(">>Cache is empty. Returning no rates<<");
                 return Task.FromResult(Enumerable.Empty<CurrencyRate>());
             }
 
-            _logger.LogInformation("Returning cached currency rates.");
+            _logger.LogInformation("++Returning cached currency rates++");
             return Task.FromResult(_cache.LatestRates);
         }
 
         public Task<string> GetCurrencyRatesRawXmlAsync()
         {
-            _logger.LogWarning("Raw XML caching is not implemented.");
+            _logger.LogWarning(">>Raw XML caching is not implemented<<");
             throw new NotImplementedException();
         }
     }

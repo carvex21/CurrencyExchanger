@@ -5,40 +5,35 @@ namespace CurrencyExchanger.Infrastructure
 {
     public class AppDbContext : DbContext
     {
-        // DbSet for CurrencyRates
-        public DbSet<CurrencyRate> CurrencyRates { get; set; }
         public DbSet<Wallet> Wallets { get; set; }
-        // Constructor
+
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
 
-        // Configure the model (optional but recommended)
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Define the schema for CurrencyRate
             modelBuilder.Entity<CurrencyRate>(entity =>
             {
-                entity.HasKey(e => new { e.CurrencyCode, e.Date }); // Composite key
+                entity.HasKey(e => new { e.CurrencyCode, e.Date });
                 entity.Property(e => e.CurrencyCode)
                     .HasMaxLength(3)
-                    .IsRequired(); // ISO code
+                    .IsRequired();
                 entity.Property(e => e.Rate)
-                    .HasColumnType("decimal(18,4)") // Define SQL type to avoid truncation
+                    .HasColumnType("decimal(18,4)")
                     .IsRequired();
                 entity.Property(e => e.Date)
-                    .IsRequired(); // Date of rate
+                    .IsRequired();
             });
-            
-            
+
             modelBuilder.Entity<Wallet>(entity =>
             {
-                entity.HasKey(e => e.Id); // Primary key
+                entity.HasKey(e => e.Id);
                 entity.Property(e => e.Currency)
                     .HasMaxLength(3)
-                    .IsRequired(); // ISO currency code
+                    .IsRequired();
                 entity.Property(e => e.Balance)
-                    .HasColumnType("decimal(18,4)") // Define SQL type for accuracy
+                    .HasColumnType("decimal(18,4)")
                     .IsRequired();
             });
 

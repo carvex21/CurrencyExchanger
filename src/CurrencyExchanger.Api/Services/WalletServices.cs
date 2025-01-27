@@ -33,7 +33,7 @@ namespace CurrencyExchanger.Api.Services
         public async Task<Wallet> GetWalletAsync(long walletId)
         {
             return await _dbContext.Wallets.FirstOrDefaultAsync(w => w.Id == walletId)
-                ?? throw new Exception(">>Wallet not found<<");
+                   ?? throw new Exception(">>Wallet not found<<");
         }
 
         public async Task<decimal> GetConvertedBalanceAsync(long walletId, string? targetCurrency)
@@ -104,7 +104,7 @@ namespace CurrencyExchanger.Api.Services
 
                 targetRate = targetCurrencyRate.Rate;
             }
-            
+
             amount = amount / sourceRate * targetRate;
 
             switch (strategy.ToLower())

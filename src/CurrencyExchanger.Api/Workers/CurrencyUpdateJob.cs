@@ -4,7 +4,6 @@ using CurrencyExchanger.Core.Models;
 using CurrencyExchanger.Infrastructure;
 using CurrencyExchanger.Infrastructure.GatewayLibrary;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 namespace CurrencyExchanger.Api.Workers
@@ -16,7 +15,8 @@ namespace CurrencyExchanger.Api.Workers
         private readonly ILogger<CurrencyUpdateJob> _logger;
         private readonly TimeSpan _refreshFrequency;
 
-        public CurrencyUpdateJob(IServiceProvider serviceProvider, CurrencyRateCache cache, ILogger<CurrencyUpdateJob> logger, IOptions<EcbWorker> options)
+        public CurrencyUpdateJob(IServiceProvider serviceProvider, CurrencyRateCache cache,
+            ILogger<CurrencyUpdateJob> logger, IOptions<EcbWorker> options)
         {
             _serviceProvider = serviceProvider;
             _cache = cache;
@@ -26,13 +26,13 @@ namespace CurrencyExchanger.Api.Workers
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("CurrencyUpdateJob is starting...");
+            _logger.LogInformation("~~CurrencyUpdateJob is starting~~");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    _logger.LogInformation("Fetching fresh currency rates...");
+                    _logger.LogInformation("~~Fetching fresh currency rates~~");
 
                     // Use a scoped service to fetch rates
                     using (var scope = _serviceProvider.CreateScope())
@@ -44,27 +44,27 @@ namespace CurrencyExchanger.Api.Workers
                         {
                             // Update the shared cache
                             _cache.UpdateRates(rates);
-                            _logger.LogInformation("Cache updated with {Count} rates.", rates.Count());
+                            _logger.LogInformation("++Cache updated with {Count} rates++", rates.Count());
 
                             // Update the database
                             await UpdateDatabaseAsync(rates, scope.ServiceProvider);
                         }
                         else
                         {
-                            _logger.LogWarning("No currency rates were fetched.");
+                            _logger.LogWarning(">>No currency rates were fetched<<");
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error during currency rate update.");
+                    _logger.LogError(ex, ">>Error during currency rate update<<");
                 }
 
-                _logger.LogInformation($"Waiting {_refreshFrequency.TotalMinutes} minutes before the next update...");
+                _logger.LogInformation($"~~Waiting {_refreshFrequency.TotalMinutes} minutes before the next update~~");
                 await Task.Delay(_refreshFrequency, stoppingToken);
             }
 
-            _logger.LogInformation("CurrencyUpdateJob is stopping...");
+            _logger.LogInformation("~~CurrencyUpdateJob is stopping~~");
         }
 
         private async Task UpdateDatabaseAsync(IEnumerable<CurrencyRate> rates, IServiceProvider serviceProvider)
@@ -72,13 +72,13 @@ namespace CurrencyExchanger.Api.Workers
             using var scope = serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            _logger.LogInformation("Updating database with fresh currency rates...");
+            _logger.LogInformation("~~Updating database with fresh currency rates~~");
 
             // Generate and execute MERGE SQL
             var mergeCommand = BuildMergeCommand(rates);
             await dbContext.Database.ExecuteSqlRawAsync(mergeCommand);
 
-            _logger.LogInformation("Database updated successfully.");
+            _logger.LogInformation("++Database updated successfully++");
         }
 
         private string BuildMergeCommand(IEnumerable<CurrencyRate> rates)
@@ -96,7 +96,8 @@ namespace CurrencyExchanger.Api.Workers
             sb.AppendLine("WHEN MATCHED THEN");
             sb.AppendLine("    UPDATE SET Rate = Source.Rate");
             sb.AppendLine("WHEN NOT MATCHED THEN");
-            sb.AppendLine("    INSERT (CurrencyCode, Rate, Date) VALUES (Source.CurrencyCode, Source.Rate, Source.Date);");
+            sb.AppendLine(
+                "    INSERT (CurrencyCode, Rate, Date) VALUES (Source.CurrencyCode, Source.Rate, Source.Date);");
 
             return sb.ToString();
         }
