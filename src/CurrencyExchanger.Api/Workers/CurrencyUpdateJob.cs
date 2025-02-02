@@ -10,17 +10,19 @@ namespace CurrencyExchanger.Api.Workers
 {
     public class CurrencyUpdateJob : BackgroundService
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly ICurrencyGateway _gateway;
         private readonly CurrencyRateCache _cache;
+        private readonly AppDbContext _dbContext;
         private readonly ILogger<CurrencyUpdateJob> _logger;
         private readonly TimeSpan _refreshFrequency;
 
-        public CurrencyUpdateJob(IServiceProvider serviceProvider, CurrencyRateCache cache,
-            ILogger<CurrencyUpdateJob> logger, IOptions<EcbWorker> options)
+        public CurrencyUpdateJob(CurrencyRateCache cache,
+            ILogger<CurrencyUpdateJob> logger, IOptions<EcbWorker> options, AppDbContext dbContext, ICurrencyGateway gateway)
         {
-            _serviceProvider = serviceProvider;
             _cache = cache;
             _logger = logger;
+            _dbContext = dbContext;
+            _gateway = gateway;
             _refreshFrequency = options.Value.RefreshFrequency;
         }
 
@@ -34,25 +36,18 @@ namespace CurrencyExchanger.Api.Workers
                 {
                     _logger.LogInformation("~~Fetching fresh currency rates~~");
 
-                    // Use a scoped service to fetch rates
-                    using (var scope = _serviceProvider.CreateScope())
+                    var rates = await _gateway.GetCurrencyRatesAsync();
+
+                    if (rates.Any())
                     {
-                        var gateway = scope.ServiceProvider.GetRequiredService<CurrencyGateway>();
-                        var rates = await gateway.GetCurrencyRatesAsync();
+                        _cache.UpdateRates(rates);
+                        _logger.LogInformation("++Cache updated with {Count} rates++", rates.Count());
 
-                        if (rates.Any())
-                        {
-                            // Update the shared cache
-                            _cache.UpdateRates(rates);
-                            _logger.LogInformation("++Cache updated with {Count} rates++", rates.Count());
-
-                            // Update the database
-                            await UpdateDatabaseAsync(rates, scope.ServiceProvider);
-                        }
-                        else
-                        {
-                            _logger.LogWarning(">>No currency rates were fetched<<");
-                        }
+                        await UpdateDatabaseAsync(rates);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(">>No currency rates were fetched<<");
                     }
                 }
                 catch (Exception ex)
@@ -67,16 +62,12 @@ namespace CurrencyExchanger.Api.Workers
             _logger.LogInformation("~~CurrencyUpdateJob is stopping~~");
         }
 
-        private async Task UpdateDatabaseAsync(IEnumerable<CurrencyRate> rates, IServiceProvider serviceProvider)
+        private async Task UpdateDatabaseAsync(IEnumerable<CurrencyRate> rates)
         {
-            using var scope = serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
             _logger.LogInformation("~~Updating database with fresh currency rates~~");
 
-            // Generate and execute MERGE SQL
             var mergeCommand = BuildMergeCommand(rates);
-            await dbContext.Database.ExecuteSqlRawAsync(mergeCommand);
+            await _dbContext.Database.ExecuteSqlRawAsync(mergeCommand);
 
             _logger.LogInformation("++Database updated successfully++");
         }
